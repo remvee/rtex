@@ -1,4 +1,4 @@
-require 'tempfile'
+require 'tmpdir'
 
 module RTeX
   module Framework #:nodoc:   
@@ -36,20 +36,37 @@ module RTeX
             Thread.current[:_rendering_rtex] = false
             options ||= {}
             ::RTeX::Document.new(result, options.merge(:processed => true)).to_pdf do |filename|
-              serve_file = Tempfile.new('rtex-pdf')
-              FileUtils.mv filename, serve_file.path
-              send_file serve_file.path,
+              serve_file = tempfile
+              FileUtils.mv(filename, serve_file)
+              send_file(
+                serve_file,
                 :disposition => (options[:disposition] rescue nil) || 'inline',
                 :url_based_filename => true,
                 :filename => (options[:filename] rescue nil),
                 :type => "application/pdf",
-                :length => File.size(serve_file.path)
-              serve_file.close
+                :length => File.size(serve_file)
+              )
             end
           else
             result
           end
-          
+        end
+
+      private
+
+        def tempfile
+          tmpdir = File.join(Dir.tmpdir, "rtex-results")
+          FileUtils.mkdir_p(tmpdir)
+
+          Dir[File.join(tmpdir, "*")].map do |fn|
+            File.join(tmpdir, fn)
+          end.select do |fn|
+            File.stat(fn).ctime < 1.hour.ago rescue nil
+          end.each do |fn|
+            FileUtils.rm_f(fn)
+          end
+
+          File.join(tmpdir, SecureRandom.hex(32))
         end
       end
       
