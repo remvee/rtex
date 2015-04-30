@@ -18,11 +18,13 @@ module RTeX
     # Default options
     # [+:preprocess+] Are we preprocessing? Default is +false+
     # [+:preprocessor+] Executable to use during preprocessing (generating TOCs, etc). Default is +latex+
+    # [+:preprocessor_arguments+] Extra arguments to the preprocessor.  Default is +nil+.
     # [+:shell_redirect+] Option redirection for shell output (eg, +"> /dev/null 2>&1"+ ). Default is +nil+.
     # [+:tmpdir+] Location of temporary directory (default: +Dir.tmpdir+)
     def self.options
       @options ||= {
         :preprocessor => 'latex',
+        :preprocessor_arguments => nil,
         :preprocess => false,
         :processor => 'pdflatex',
         # 
@@ -123,11 +125,11 @@ module RTeX
     end
     
     def preprocess!
-      unless `#{preprocessor} --interaction=nonstopmode '#{source_file}' #{@options[:shell_redirect]}`
-        raise GenerationError, "Could not preprocess using #{preprocessor}"      
+      unless `#{preprocessor} #{@options[:preprocessor_arguments]} --interaction=nonstopmode '#{source_file}' #{@options[:shell_redirect]}`
+        raise GenerationError, "Could not preprocess using #{preprocessor}"
       end
     end
-    
+
     def preprocessing?
       @options[:preprocess]
     end
